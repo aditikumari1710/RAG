@@ -4,6 +4,7 @@ from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 import configparser
 import uuid
+from langchain_chroma import Chroma
 
 # Load the config file
 config = configparser.ConfigParser()
@@ -59,18 +60,30 @@ Answer:"""
         return "Error generating response."
 
 
-
-
-def get_title(query):
+#When you initialized the Chroma vector store (vectordb), you passed an embedding_function (which is the HuggingFaceEmbeddings model).
+#Chroma uses this function to generate embeddings for the documents when they are indexed.
+#So below commented function will also work
+#When you pass the raw query (a string), Chroma automatically generates an embedding for the query using the embedding_function (which is your HuggingFaceEmbeddings model).
+# It doesn't require you to manually embed the query first. 
+"""def get_title(query):
     results = vectordb.similarity_search(query, k=3)
     metadatas=[]
     for i, doc in enumerate(results, 1):
         metadatas.append(doc.metadata.get('title'))
         
-    return metadatas[0]
+    return metadatas[0]"""
     
+def get_title(query):
+    # Embed the query to get relevant search results from Chroma
+    query_embedding = embedding_model.embed_query(query)  # Use embed_query for HuggingFaceEmbeddings
+
+    # Perform similarity search using the embedded query
+    results = vectordb.similarity_search_by_vector(query_embedding, k=3)
+    metadatas = []
+    for i, doc in enumerate(results, 1):
+        metadatas.append(doc.metadata.get('title'))
     
-    
+    return metadatas[0] if metadatas else "No relevant title found."
     
 
 def clean_context(context):
@@ -91,6 +104,8 @@ def rag_pipeline(query,source):
     answer = call_llm_context(context, query,source)
     return answer
 
+
+    
 def user_uploading_doc():
     pass
 
